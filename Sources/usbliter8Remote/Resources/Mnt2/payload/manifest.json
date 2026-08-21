@@ -1,0 +1,12 @@
+{
+  "chunkCount" : 1,
+  "chunkSize" : 4194304,
+  "entries" : [
+    "start.sh",
+    "extracted"
+  ],
+  "format" : "YXDeviceUtilityRamdiskPayload",
+  "plaintextSize" : 20480,
+  "sha256" : "4ffea72fff2b780bfc556f2504a988e30f384eac139a126124e4141ac6248275",
+  "version" : 1
+}

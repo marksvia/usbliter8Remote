@@ -1,0 +1,73 @@
+.DS_Store
+.build/
+.build-*/
+dist/
+.swiftpm/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Local secrets and plaintext boot assets must never enter the repository.
+Secrets/
+*.key
+*.keys
+*.secret
+*.ibec
+!Sources/usbliter8Remote/Resources/BootAssets/*.ibec.enc
+
+# Ramdisk plaintext must stay outside the open-source repository.
+Sources/usbliter8Remote/Resources/Ramdisk/start.sh
+Sources/usbliter8Remote/Resources/Ramdisk/extracted/
+!Sources/usbliter8Remote/Resources/Ramdisk/payload/
+!Sources/usbliter8Remote/Resources/Ramdisk/payload/*.yrd
+!Sources/usbliter8Remote/Resources/Ramdisk/payload/manifest.json
+
+# Mnt2 plaintext scripts are private; only encrypted payload and iproxy are public.
+Sources/usbliter8Remote/Resources/Mnt2/**/*.sh
+Sources/usbliter8Remote/Resources/Mnt2/mnt2.sh
+Sources/usbliter8Remote/Resources/Mnt2/start.sh
+Sources/usbliter8Remote/Resources/Mnt2/extracted/
+!Sources/usbliter8Remote/Resources/Mnt2/payload/
+!Sources/usbliter8Remote/Resources/Mnt2/payload/*.yrd
+!Sources/usbliter8Remote/Resources/Mnt2/payload/manifest.json
+!Sources/usbliter8Remote/Resources/Mnt2/tools/iproxy.resource
+
+# ExtractFile private script and fallback plists stay encrypted.
+Sources/usbliter8Remote/Resources/ExtractFile/**/*.sh
+Sources/usbliter8Remote/Resources/ExtractFile/**/*.plist
+Sources/usbliter8Remote/Resources/ExtractFile/start.sh
+Sources/usbliter8Remote/Resources/ExtractFile/extracted/
+!Sources/usbliter8Remote/Resources/ExtractFile/payload/
+!Sources/usbliter8Remote/Resources/ExtractFile/payload/*.yrd
+!Sources/usbliter8Remote/Resources/ExtractFile/payload/manifest.json
+!Sources/usbliter8Remote/Resources/ExtractFile/tools/iproxy.resource
+
+# RestoreFile private script and fallback plists stay encrypted.
+Sources/usbliter8Remote/Resources/RestoreFile/**/*.sh
+Sources/usbliter8Remote/Resources/RestoreFile/**/*.plist
+Sources/usbliter8Remote/Resources/RestoreFile/start.sh
+Sources/usbliter8Remote/Resources/RestoreFile/extracted/
+!Sources/usbliter8Remote/Resources/RestoreFile/payload/
+!Sources/usbliter8Remote/Resources/RestoreFile/payload/*.yrd
+!Sources/usbliter8Remote/Resources/RestoreFile/payload/manifest.json
+!Sources/usbliter8Remote/Resources/RestoreFile/tools/iproxy.resource
+
+# HelloNoChange scripts, PHP runtime and plist resources stay encrypted.
+Sources/usbliter8Remote/Resources/HelloNoChange/**/*.sh
+Sources/usbliter8Remote/Resources/HelloNoChange/**/*.php
+Sources/usbliter8Remote/Resources/HelloNoChange/**/*.py
+Sources/usbliter8Remote/Resources/HelloNoChange/**/*.plist
+Sources/usbliter8Remote/Resources/HelloNoChange/**/*.tar.gz
+Sources/usbliter8Remote/Resources/HelloNoChange/start.sh
+Sources/usbliter8Remote/Resources/HelloNoChange/extracted/
+!Sources/usbliter8Remote/Resources/HelloNoChange/payload/
+!Sources/usbliter8Remote/Resources/HelloNoChange/payload/*.yrd
+!Sources/usbliter8Remote/Resources/HelloNoChange/payload/manifest.json
+!Sources/usbliter8Remote/Resources/HelloNoChange/tools/iproxy.resource
+
+# Generated Python bytecode.
+*.pyc
+__pycache__/
+
+# Xcode per-user workspace state.
+**/*.xcuserstate
+**/*.xcuserdatad/

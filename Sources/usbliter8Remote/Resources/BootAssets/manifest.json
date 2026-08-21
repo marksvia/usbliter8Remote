@@ -1,0 +1,56 @@
+{
+  "assets": [
+    {
+      "codename": "d321",
+      "file": "d321.ibec.enc"
+    },
+    {
+      "codename": "d331",
+      "file": "d331.ibec.enc"
+    },
+    {
+      "codename": "d331p",
+      "file": "d331p.ibec.enc"
+    },
+    {
+      "codename": "d421",
+      "file": "d421.ibec.enc"
+    },
+    {
+      "codename": "d431",
+      "file": "d431.ibec.enc"
+    },
+    {
+      "codename": "d79",
+      "file": "d79.ibec.enc"
+    },
+    {
+      "codename": "ipad11b",
+      "file": "ipad11b.ibec.enc"
+    },
+    {
+      "codename": "j210",
+      "file": "j210.ibec.enc"
+    },
+    {
+      "codename": "j217",
+      "file": "j217.ibec.enc"
+    },
+    {
+      "codename": "n104",
+      "file": "n104.ibec.enc"
+    },
+    {
+      "codename": "n841",
+      "file": "n841.ibec.enc"
+    }
+  ],
+  "format": "yxba-v2-multilayer-aes-256-gcm",
+  "version": 2,
+  "layers": 4,
+  "keyStorage": "embedded fragmented runtime reconstruction",
+  "authenticatedData": "YXBA|v2|CODENAME|layer:N",
+  "completeKeysIncludedInRepository": false,
+  "runtimeDecryptionMaterialIncluded": true,
+  "publicBuildSupportsEraseDevice": true
+}

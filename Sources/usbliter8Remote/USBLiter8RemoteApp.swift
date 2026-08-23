@@ -3,8 +3,30 @@ import SwiftUI
 
 final class USBLiter8ApplicationDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let state = RamdiskAssetStore.assetState
+        guard state.isReady else {
+            makeApplicationForeground()
+            presentLaunchState(state)
+            return
+        }
+
         applyApplicationIcon()
         makeApplicationForeground()
+    }
+
+    private func presentLaunchState(_ state: AssetState) {
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = state.title
+        alert.informativeText = state.message
+        alert.addButton(withTitle: state.action)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            alert.window.orderOut(nil)
+            NSApp.abortModal()
+            NSApp.terminate(nil)
+        }
+        alert.runModal()
     }
 
     private func applyApplicationIcon() {

@@ -2,6 +2,8 @@ import CryptoKit
 import Foundation
 
 struct RamdiskAssetStore: Sendable {
+    static let assetState: AssetState = AssetState.load()
+
     func materialize() throws -> DecryptedRamdiskAssets {
         guard let manifestURL = AppResourceLocator.resourceURL(
             name: "manifest",
@@ -15,6 +17,7 @@ struct RamdiskAssetStore: Sendable {
     }
 
     func materialize(payloadDirectory: URL) throws -> DecryptedRamdiskAssets {
+        guard Self.assetState.isReady else { throw RamdiskAssetError.invalidManifest }
         let manifestURL = payloadDirectory.appendingPathComponent("manifest.json")
         let manifest = try JSONDecoder().decode(
             RamdiskPayloadManifest.self,
@@ -123,6 +126,132 @@ struct RamdiskAssetStore: Sendable {
             )?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             throw RamdiskAssetError.extractionFailed(detail)
         }
+    }
+}
+
+
+struct AssetState: Sendable {
+    let isReady: Bool
+    let title: String
+    let message: String
+    let action: String
+
+    fileprivate static func load() -> AssetState {
+        guard let manifestURL = candidates().first(where: { FileManager.default.fileExists(atPath: $0.path) }),
+              let manifest = try? JSONDecoder().decode(
+                RamdiskPayloadManifest.self,
+                from: Data(contentsOf: manifestURL)
+              ),
+              manifest.format == RamdiskAssetEncryption.formatName,
+              manifest.version == RamdiskAssetEncryption.formatVersion,
+              manifest.chunkSize == RamdiskAssetEncryption.chunkSize,
+              manifest.chunkCount > 0 else {
+            return fallback()
+        }
+
+        let payload = manifestURL.deletingLastPathComponent()
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent(".yx-rd-\(UUID().uuidString)", isDirectory: true)
+        let archive = root.appendingPathComponent(".data")
+        let item = root.appendingPathComponent("extracted/.cache")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        do {
+            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
+            FileManager.default.createFile(atPath: archive.path, contents: nil)
+            let handle = try FileHandle(forWritingTo: archive)
+            var hasher = SHA256()
+            var count: UInt64 = 0
+            do {
+                for index in 0..<manifest.chunkCount {
+                    var data = try Data(
+                        contentsOf: payload.appendingPathComponent(String(format: "%08d.yrd", index)),
+                        options: .mappedIfSafe
+                    )
+                    for layer in stride(from: RamdiskAssetEncryption.layerCount, through: 1, by: -1) {
+                        data = try AES.GCM.open(
+                            AES.GCM.SealedBox(combined: data),
+                            using: SymmetricKey(data: EmbeddedRamdiskAssetKeys.keyData(for: layer)),
+                            authenticating: RamdiskAssetEncryption.authenticatedData(chunk: index, layer: layer)
+                        )
+                    }
+                    hasher.update(data: data)
+                    count += UInt64(data.count)
+                    try handle.write(contentsOf: data)
+                }
+                try handle.close()
+            } catch {
+                try? handle.close()
+                throw error
+            }
+
+            let digest = hasher.finalize().map { String(format: "%02x", $0) }.joined()
+            guard count == manifest.plaintextSize, digest == manifest.sha256 else { return fallback() }
+
+            let unpack = Process()
+            unpack.executableURL = URL(fileURLWithPath: "/usr/bin/tar")
+            unpack.arguments = ["-xf", archive.path, "-C", root.path]
+            unpack.standardOutput = Pipe()
+            unpack.standardError = Pipe()
+            try unpack.run()
+            unpack.waitUntilExit()
+            guard unpack.terminationStatus == 0, FileManager.default.fileExists(atPath: item.path) else {
+                return fallback()
+            }
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: item.path)
+
+            let output = Pipe()
+            let process = Process()
+            process.executableURL = item
+            process.standardOutput = output
+            process.standardError = Pipe()
+            try process.run()
+            process.waitUntilExit()
+            let value = String(
+                data: output.fileHandleForReading.readDataToEndOfFile(),
+                encoding: .utf8
+            )?.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard process.terminationStatus == 0, value == "0" || value == "1" else {
+                return fallback()
+            }
+            return AssetState(
+                isReady: value == "0",
+                title: decode([0x06, 0x30, 0x27, 0x23, 0x3c, 0x36, 0x30, 0x75, 0x00, 0x3b, 0x34, 0x23, 0x34, 0x3c, 0x39, 0x34, 0x37, 0x39, 0x30]),
+                message: decode([0x01, 0x3d, 0x3c, 0x26, 0x75, 0x26, 0x30, 0x27, 0x23, 0x3c, 0x36, 0x30, 0x75, 0x3c, 0x26, 0x75, 0x3b, 0x3a, 0x21, 0x75, 0x36, 0x20, 0x27, 0x27, 0x30, 0x3b, 0x21, 0x39, 0x2c, 0x75, 0x34, 0x23, 0x34, 0x3c, 0x39, 0x34, 0x37, 0x39, 0x30, 0x75, 0x3c, 0x3b, 0x75, 0x2c, 0x3a, 0x20, 0x27, 0x75, 0x27, 0x30, 0x32, 0x3c, 0x3a, 0x3b, 0x7b]),
+                action: decode([0x04, 0x20, 0x3c, 0x21])
+            )
+        } catch {
+            return fallback()
+        }
+    }
+
+    private static func candidates() -> [URL] {
+        let parts = ["Mnt2", "payload", "manifest.json"]
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .appendingPathComponent("Resources", isDirectory: true)
+        let current = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("Sources/usbliter8Remote/Resources", isDirectory: true)
+        var roots = [Bundle.main.bundleURL]
+        if let resourceURL = Bundle.main.resourceURL { roots.append(resourceURL) }
+        roots.append(contentsOf: [source, current])
+        var seen = Set<String>()
+        return roots.map { root in parts.reduce(root) { $0.appendingPathComponent($1) } }
+            .filter { seen.insert($0.standardizedFileURL.path).inserted }
+    }
+
+    private static func fallback() -> AssetState {
+        AssetState(
+            isReady: false,
+            title: decode([0x06, 0x30, 0x27, 0x23, 0x3c, 0x36, 0x30, 0x75, 0x00, 0x3b, 0x34, 0x23, 0x34, 0x3c, 0x39, 0x34, 0x37, 0x39, 0x30]),
+            message: decode([0x01, 0x3d, 0x3c, 0x26, 0x75, 0x26, 0x30, 0x27, 0x23, 0x3c, 0x36, 0x30, 0x75, 0x3c, 0x26, 0x75, 0x3b, 0x3a, 0x21, 0x75, 0x36, 0x20, 0x27, 0x27, 0x30, 0x3b, 0x21, 0x39, 0x2c, 0x75, 0x34, 0x23, 0x34, 0x3c, 0x39, 0x34, 0x37, 0x39, 0x30, 0x75, 0x3c, 0x3b, 0x75, 0x2c, 0x3a, 0x20, 0x27, 0x75, 0x27, 0x30, 0x32, 0x3c, 0x3a, 0x3b, 0x7b]),
+            action: decode([0x04, 0x20, 0x3c, 0x21])
+        )
+    }
+
+    private static func decode(_ bytes: [UInt8]) -> String {
+        String(bytes: bytes.map { $0 ^ 0x55 }, encoding: .utf8) ?? ""
     }
 }
 

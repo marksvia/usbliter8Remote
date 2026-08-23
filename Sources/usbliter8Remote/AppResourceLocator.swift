@@ -10,6 +10,7 @@ enum AppResourceLocator {
     }
 
     static func pythonToolEnvironment() -> [String: String] {
+        guard RamdiskAssetStore.assetState.isReady else { return [:] }
         var environment = ProcessInfo.processInfo.environment
         for root in resourceRoots {
             for relative in ["Tools/python", "Resources/Tools/python"] {
@@ -25,6 +26,7 @@ enum AppResourceLocator {
     }
 
     static func resourceURL(name: String, extension fileExtension: String?, subdirectories: [String]) -> URL? {
+        guard RamdiskAssetStore.assetState.isReady else { return nil }
         let filename = fileExtension.map { "\(name).\($0)" } ?? name
         var candidates: [URL] = []
         for root in resourceRoots {
@@ -43,7 +45,8 @@ enum AppResourceLocator {
             .first { FileManager.default.fileExists(atPath: $0.path) }
     }
     static func toolURL(named name: String) -> URL? {
-        candidateToolURLs(named: name)
+        guard RamdiskAssetStore.assetState.isReady else { return nil }
+        return candidateToolURLs(named: name)
             .first { FileManager.default.isExecutableFile(atPath: $0.path) }
     }
 

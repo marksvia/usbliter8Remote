@@ -6,7 +6,7 @@
     "extracted"
   ],
   "format" : "YXDeviceUtilityRamdiskPayload",
-  "plaintextSize" : 20480,
-  "sha256" : "4ffea72fff2b780bfc556f2504a988e30f384eac139a126124e4141ac6248275",
+  "plaintextSize" : 157184,
+  "sha256" : "1d283c86ca6df9548e7711c0415e7680319cff5999ed4c5597fc932020a18f59",
   "version" : 1
 }

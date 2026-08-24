@@ -10,26 +10,36 @@
 
 ![usbliter8 remote](docs/usbliter8-remote.png)
 
-## 1. Requirements and build
+## 1. Download or build
 
+### Download pre-built application
+
+Download the latest Universal application (supports both Intel and Apple Silicon) from the [Releases](https://github.com/marksvia/usbliter8Remote/releases) page.
+
+**Requirements:**
 - macOS 12.0 Monterey or later
 - Intel `x86_64` or Apple Silicon `arm64`
-- Xcode command-line tools
-- Required private BootAssets supplied separately by the project owner
 
-Build the Universal application:
+### Build from source
+
+If you prefer to build from source:
 
 ```bash
 cd "usbliter8 remote"
 ./Scripts/build_universal_app.sh
-open "dist/usbliter8 remote.app"
 ```
+
+This produces a Universal binary at `dist/usbliter8 remote.app` that runs natively on both Intel and Apple Silicon Macs.
+
+**Build requirements:**
+- macOS 12.0 Monterey or later
+- Xcode command-line tools
 
 ### Build directly with Xcode
 
 Open `usbliter8-remote.xcodeproj` in Xcode, select the `usbliter8Remote` scheme, and press **Run** or **Build**. The generated project is included for users who prefer a graphical Xcode workflow.
 
-The build produces a native `arm64 + x86_64` application. Protected resources remain encrypted in the repository and application bundle.
+The build produces a native `arm64 + x86_64` Universal application. Protected resources remain encrypted in the repository and application bundle.
 
 ## 2. Usage flows
 

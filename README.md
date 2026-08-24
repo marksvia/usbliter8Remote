@@ -1,4 +1,4 @@
-# usbliter8 remote
+# 🐱 usbliter8 remote
 
 > **License:** This project is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Commercial use, resale, paid distribution, commercial service integration, and repackaging for profit require prior written permission from the copyright holder. See [NOTICE.md](NOTICE.md) for copyright and branding terms.
 

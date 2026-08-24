@@ -1,6 +1,7 @@
 import CryptoKit
 import Foundation
 
+/// Manages encrypted Ramdisk asset decryption and validation
 struct RamdiskAssetStore: Sendable {
     static let assetState: AssetState = AssetState.load()
 

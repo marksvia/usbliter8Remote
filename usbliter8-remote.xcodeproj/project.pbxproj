@@ -129,6 +129,22 @@
          path = "USBLiter8RemoteApp.swift";
          sourceTree = "<group>";
       };
+      "OBJ_72" = {
+         isa = "PBXFileReference";
+         lastKnownFileType = folder;
+         path = "Resources";
+         sourceTree = "<group>";
+      };
+      "OBJ_73" = {
+         isa = "PBXBuildFile";
+         fileRef = "OBJ_72";
+      };
+      "OBJ_74" = {
+         isa = "PBXResourcesBuildPhase";
+         files = (
+            "OBJ_73"
+         );
+      };
       "OBJ_29" = {
          isa = "PBXGroup";
          children = (
@@ -567,7 +583,8 @@
             "OBJ_25",
             "OBJ_26",
             "OBJ_27",
-            "OBJ_28"
+            "OBJ_28",
+            "OBJ_72"
          );
          name = "usbliter8Remote";
          path = "Sources/usbliter8Remote";
@@ -606,7 +623,8 @@
          buildConfigurationList = "OBJ_47";
          buildPhases = (
             "OBJ_50",
-            "OBJ_71"
+            "OBJ_71",
+            "OBJ_74"
          );
          dependencies = (
          );

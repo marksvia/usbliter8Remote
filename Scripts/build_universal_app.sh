@@ -97,6 +97,15 @@ ditto "$ROOT_DIR/Sources/usbliter8Remote/Resources/HelloNoChange" "$APP_DIR/Cont
 ditto "$ROOT_DIR/Sources/usbliter8Remote/Resources/Branding" "$APP_DIR/Contents/Resources/Branding"
 cp "$ROOT_DIR/Sources/usbliter8Remote/Resources/Branding/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
 
+for required in \
+    "$APP_DIR/Contents/Resources/Ramdisk/payload/manifest.json" \
+    "$APP_DIR/Contents/Resources/Mnt2/payload/manifest.json" \
+    "$APP_DIR/Contents/Resources/ExtractFile/payload/manifest.json" \
+    "$APP_DIR/Contents/Resources/RestoreFile/payload/manifest.json" \
+    "$APP_DIR/Contents/Resources/HelloNoChange/payload/manifest.json"; do
+    test -f "$required" || { echo "Missing packaged resource: $required" >&2; exit 1; }
+done
+
 cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

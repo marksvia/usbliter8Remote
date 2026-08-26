@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
 
+enum AppLanguage: String {
+    case english = "en"
+    case chinese = "zh-Hans"
+}
+
 final class USBLiter8ApplicationDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyApplicationIcon()
@@ -50,6 +55,7 @@ struct USBLiter8RemoteApp: App {
 
 struct ContentView: View {
     @StateObject private var deviceState = DeviceStateViewModel()
+    @AppStorage("interfaceLanguage") private var interfaceLanguage = AppLanguage.english.rawValue
     @State private var activityText = "Waiting for an operation…"
     @State private var progress: Double = 0.68
     @State private var logs: [LogLine] = [
@@ -100,6 +106,14 @@ struct ContentView: View {
         .init(title: "reboot", symbol: "arrow.clockwise", kind: .reboot)
     ]
 
+    private var language: AppLanguage {
+        AppLanguage(rawValue: interfaceLanguage) ?? .english
+    }
+
+    private func text(_ english: String, _ chinese: String) -> String {
+        language == .english ? english : chinese
+    }
+
     var body: some View {
         ZStack {
             FlowingGradientBackground()
@@ -131,6 +145,10 @@ struct ContentView: View {
             }
             guard !isBusy else { return }
             updateDetectionLog(for: newDevice)
+        }
+        .onChange(of: interfaceLanguage) { _ in
+            guard !isBusy else { return }
+            updateDetectionLog(for: detectedDevice)
         }
     }
 
@@ -336,7 +354,7 @@ struct ContentView: View {
         HStack {
             // Reserve equal space for the native macOS window controls to keep the title centered.
             Color.clear
-                .frame(width: 150, height: 1)
+                .frame(width: 242, height: 1)
 
             Spacer()
             HStack(spacing: 10) {
@@ -363,20 +381,26 @@ struct ContentView: View {
             }
             Spacer()
 
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(isConnected ? AppColors.green : Color.gray.opacity(0.55))
-                    .frame(width: 6, height: 6)
-                Text(detectedDevice?.isRamdisk == true ? "Ramdisk Connected" : (isConnected ? "USB Connected" : "Waiting for Device"))
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(isConnected ? AppColors.greenDark : AppColors.secondaryText)
+            HStack(spacing: 10) {
+                LanguageToggle(language: $interfaceLanguage)
+
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(isConnected ? AppColors.green : Color.gray.opacity(0.55))
+                        .frame(width: 6, height: 6)
+                    Text(detectedDevice?.isRamdisk == true
+                        ? text("Ramdisk Connected", "Ramdisk 已连接")
+                        : (isConnected ? text("USB Connected", "USB 已连接") : text("Waiting for Device", "等待设备")))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(isConnected ? AppColors.greenDark : AppColors.secondaryText)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(isConnected ? AppColors.greenPale.opacity(0.95) : Color.white.opacity(0.52))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(AppColors.ink.opacity(0.09), lineWidth: 1))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(isConnected ? AppColors.greenPale.opacity(0.95) : Color.white.opacity(0.52))
-            .clipShape(Capsule())
-            .overlay(Capsule().stroke(AppColors.ink.opacity(0.09), lineWidth: 1))
-            .frame(width: 150, alignment: .trailing)
+            .frame(width: 242, alignment: .trailing)
         }
         .padding(.horizontal, 24)
         .frame(height: 64)
@@ -412,16 +436,16 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Device Identity")
+                    Text(text("Device Identity", "设备信息"))
                         .font(.system(size: 11, weight: .bold))
                         .tracking(1.7)
                         .foregroundColor(AppColors.greenDark.opacity(0.72))
-                    Text(isConnected ? "Current device information loaded" : "Connect a device to load its information")
+                    Text(isConnected ? text("Current device information loaded", "已加载当前设备信息") : text("Connect a device to load its information", "连接设备以加载信息"))
                         .font(.system(size: 11))
                         .foregroundColor(AppColors.tertiaryText)
                 }
                 Spacer()
-                Text(detectedDevice?.mode.displayText ?? "Not Connected")
+                Text(detectedDevice?.mode.displayText ?? text("Not Connected", "未连接"))
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(isConnected ? AppColors.greenDark : AppColors.secondaryText)
                     .padding(.horizontal, 10)
@@ -431,11 +455,11 @@ struct ContentView: View {
             }
 
             VStack(spacing: 0) {
-                IdentityRow(label: "ECID", value: detectedDevice?.ecid ?? "Unavailable")
+                IdentityRow(label: "ECID", value: detectedDevice?.ecid ?? text("Unavailable", "不可用"))
                 Divider().opacity(0.40)
-                IdentityRow(label: "UDID", value: detectedDevice?.udid ?? "Unavailable")
+                IdentityRow(label: "UDID", value: detectedDevice?.udid ?? text("Unavailable", "不可用"))
                 Divider().opacity(0.40)
-                IdentityRow(label: "SN", value: detectedDevice?.serialNumber ?? "Unavailable")
+                IdentityRow(label: "SN", value: detectedDevice?.serialNumber ?? text("Unavailable", "不可用"))
             }
             .padding(.top, 12)
         }
@@ -453,25 +477,25 @@ struct ContentView: View {
             SummaryCard(
                 symbol: "iphone",
                 tint: AppColors.greenPale,
-                label: "Device Model",
-                value: detectedDevice?.displayName ?? "No Device Detected",
-                status: detectedDevice.map { $0.isSupported ? "Supported" : "Not Supported" } ?? "Waiting for Detection",
+                label: text("Device Model", "设备型号"),
+                value: detectedDevice?.displayName ?? text("No Device Detected", "未检测到设备"),
+                status: detectedDevice.map { $0.isSupported ? text("Supported", "支持") : text("Not Supported", "不支持") } ?? text("Waiting for Detection", "等待检测"),
                 statusColor: detectedDevice?.isSupported == true ? AppColors.greenDark : AppColors.secondaryText
             )
             SummaryCard(
                 symbol: "cable.connector",
                 tint: AppColors.pinkPale,
-                label: "USB Connection",
-                value: detectedDevice?.isRamdisk == true ? "Ramdisk Connected" : (isConnected ? "USB Connected" : "USB Not Connected"),
-                status: detectedDevice?.mode.displayText ?? "Connect a device",
+                label: text("USB Connection", "USB 连接"),
+                value: detectedDevice?.isRamdisk == true ? text("Ramdisk Connected", "Ramdisk 已连接") : (isConnected ? text("USB Connected", "USB 已连接") : text("USB Not Connected", "USB 未连接")),
+                status: detectedDevice?.mode.displayText ?? text("Connect a device", "请连接设备"),
                 statusColor: isConnected ? AppColors.greenDark : AppColors.secondaryText
             )
             SummaryCard(
                 symbol: "checkmark.shield",
                 tint: AppColors.purplePale,
-                label: "PWN Status",
-                value: detectedDevice?.isRamdisk == true ? "Ramdisk Connected" : (detectedDevice?.isPwndfu == true ? "PWNDFU Ready" : "PWN Not Active"),
-                status: detectedDevice?.isRamdisk == true ? "SSH Ready" : (detectedDevice?.isPwndfu == true ? "PWND:[usbliter8]" : "Waiting for PWNDFU"),
+                label: text("PWN Status", "PWN 状态"),
+                value: detectedDevice?.isRamdisk == true ? text("Ramdisk Connected", "Ramdisk 已连接") : (detectedDevice?.isPwndfu == true ? text("PWNDFU Ready", "PWNDFU 就绪") : text("PWN Not Active", "PWN 未激活")),
+                status: detectedDevice?.isRamdisk == true ? text("SSH Ready", "SSH 就绪") : (detectedDevice?.isPwndfu == true ? "PWND:[usbliter8]" : text("Waiting for PWNDFU", "等待 PWNDFU")),
                 statusColor: detectedDevice?.isRamdisk == true || detectedDevice?.isPwndfu == true ? AppColors.greenDark : AppColors.secondaryText
             )
         }
@@ -480,11 +504,11 @@ struct ContentView: View {
     private var activityLog: some View {
         VStack(alignment: .leading, spacing: 13) {
             HStack {
-                Text("Activity Log")
+                Text(text("Activity Log", "活动日志"))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.white.opacity(0.94))
                 Spacer()
-                Text("Live Output")
+                Text(text("Live Output", "实时输出"))
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.white.opacity(0.55))
             }
@@ -512,39 +536,39 @@ struct ContentView: View {
     }
 
     private var connectedDeviceCard: some View {
-        PanelCard(title: "Live Device Detection") {
+        PanelCard(title: text("Live Device Detection", "实时设备检测")) {
             VStack(spacing: 0) {
                 DeviceRow(
                     symbol: "iphone",
-                    title: detectedDevice?.displayName ?? "No Apple Device Detected",
-                    subtitle: detectedDevice.map { "Mode · \($0.mode.displayText)" } ?? "Listening for USB devices",
-                    status: isConnected ? "Online" : "Offline"
+                    title: detectedDevice?.displayName ?? text("No Apple Device Detected", "未检测到 Apple 设备"),
+                    subtitle: detectedDevice.map { "\(text("Mode", "模式")) · \($0.mode.displayText)" } ?? text("Listening for USB devices", "正在监听 USB 设备"),
+                    status: isConnected ? text("Online", "在线") : text("Offline", "离线")
                 )
                 Divider().opacity(0.45)
                 DeviceRow(
                     symbol: "cpu",
-                    title: detectedDevice?.cpid ?? "CPID Unavailable",
-                    subtitle: detectedDevice?.bdid.map { String(format: "BDID · 0x%02X", $0) } ?? "BDID Unavailable"
+                    title: detectedDevice?.cpid ?? text("CPID Unavailable", "CPID 不可用"),
+                    subtitle: detectedDevice?.bdid.map { String(format: "BDID · 0x%02X", $0) } ?? text("BDID Unavailable", "BDID 不可用")
                 )
                 Divider().opacity(0.45)
                 DeviceRow(
                     symbol: "checkmark.shield",
-                    title: detectedDevice?.isRamdisk == true ? "Ramdisk Connected" : (detectedDevice?.isSupported == true ? "Current device is supported" : "Support status unconfirmed"),
-                    subtitle: detectedDevice?.isRamdisk == true ? "Ramdisk SSH Ready" : (detectedDevice?.isPwndfu == true ? "Device is in PWNDFU" : "Waiting for PWNDFU status")
+                    title: detectedDevice?.isRamdisk == true ? text("Ramdisk Connected", "Ramdisk 已连接") : (detectedDevice?.isSupported == true ? text("Current device is supported", "当前设备受支持") : text("Support status unconfirmed", "支持状态未确认")),
+                    subtitle: detectedDevice?.isRamdisk == true ? text("Ramdisk SSH Ready", "Ramdisk SSH 就绪") : (detectedDevice?.isPwndfu == true ? text("Device is in PWNDFU", "设备处于 PWNDFU") : text("Waiting for PWNDFU status", "等待 PWNDFU 状态"))
                 )
             }
         }
     }
 
     private var progressCard: some View {
-        PanelCard(title: "Workspace Progress") {
+        PanelCard(title: text("Workspace Progress", "工作进度")) {
             VStack(alignment: .leading, spacing: 13) {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(activityText)
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(AppColors.ink)
-                        Text("Environment checks complete")
+                        Text(text("Environment checks complete", "环境检查完成"))
                             .font(.system(size: 10))
                             .foregroundColor(AppColors.tertiaryText)
                     }
@@ -569,9 +593,9 @@ struct ContentView: View {
                 .frame(height: 7)
 
                 HStack {
-                    Text("4 of 6 tasks complete")
+                    Text(text("4 of 6 tasks complete", "已完成 4/6 项任务"))
                     Spacer()
-                    Text("Healthy")
+                    Text(text("Healthy", "正常"))
                 }
                 .font(.system(size: 10))
                 .foregroundColor(AppColors.secondaryText)
@@ -582,10 +606,10 @@ struct ContentView: View {
     private var noticeCard: some View {
         HStack {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Before You Continue")
+                Text(text("Before You Continue", "继续前请注意"))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(AppColors.ink)
-                Text("Keep the device connected and avoid closing the application during an operation.")
+                Text(text("Keep the device connected and avoid closing the application during an operation.", "操作期间请保持设备连接，避免关闭应用。"))
                     .font(.system(size: 11))
                     .foregroundColor(AppColors.secondaryText)
             }
@@ -600,7 +624,7 @@ struct ContentView: View {
     private var actionDock: some View {
         HStack(spacing: 9) {
             ForEach(actions) { item in
-                ActionButton(item: item) {
+                ActionButton(item: item, title: item.displayTitle(for: language)) {
                     if item.title == "ramdisk" {
                         prepareRamdisk()
                     } else if item.title == "mnt2" {
@@ -639,27 +663,27 @@ struct ContentView: View {
 
         if let device = device {
             if device.isRamdisk {
-                activityText = "Ramdisk Connected"
+                activityText = text("Ramdisk Connected", "Ramdisk 已连接")
                 logs = [
-                    .init(time: time, text: "USB device connected", success: true),
-                    .init(time: time, text: "Identified as  \(device.displayName)", success: true),
-                    .init(time: time, text: "Ramdisk SSH Connected", success: true),
-                    .init(time: time, text: "Device is currently in the Ramdisk environment", success: true)
+                    .init(time: time, text: text("USB device connected", "USB 设备已连接"), success: true),
+                    .init(time: time, text: "\(text("Identified as", "识别为"))  \(device.displayName)", success: true),
+                    .init(time: time, text: text("Ramdisk SSH Connected", "Ramdisk SSH 已连接"), success: true),
+                    .init(time: time, text: text("Device is currently in the Ramdisk environment", "设备当前处于 Ramdisk 环境"), success: true)
                 ]
             } else {
-                activityText = "Device detection complete"
+                activityText = text("Device detection complete", "设备检测完成")
                 logs = [
-                    .init(time: time, text: "USB device connected", success: true),
-                    .init(time: time, text: "Identified as  \(device.displayName)", success: true),
-                    .init(time: time, text: device.isSupported ? "Current device is supported" : "Current device is not supported", success: device.isSupported),
-                    .init(time: time, text: device.isPwndfu ? "PWNDFU Ready" : "Device is not in PWNDFU", success: device.isPwndfu)
+                    .init(time: time, text: text("USB device connected", "USB 设备已连接"), success: true),
+                    .init(time: time, text: "\(text("Identified as", "识别为"))  \(device.displayName)", success: true),
+                    .init(time: time, text: device.isSupported ? text("Current device is supported", "当前设备受支持") : text("Current device is not supported", "当前设备不受支持"), success: device.isSupported),
+                    .init(time: time, text: device.isPwndfu ? text("PWNDFU Ready", "PWNDFU 就绪") : text("Device is not in PWNDFU", "设备未处于 PWNDFU"), success: device.isPwndfu)
                 ]
             }
         } else {
-            activityText = "Waiting for Device…"
+            activityText = text("Waiting for Device…", "等待设备…")
             logs = [
-                .init(time: time, text: "Device detection service is running", success: true),
-                .init(time: time, text: "Waiting for an Apple USB device…", success: false)
+                .init(time: time, text: text("Device detection service is running", "设备检测服务正在运行"), success: true),
+                .init(time: time, text: text("Waiting for an Apple USB device…", "等待 Apple USB 设备…"), success: false)
             ]
         }
     }
@@ -1635,6 +1659,7 @@ struct DeviceRow: View {
 
 struct ActionButton: View {
     let item: ActionItem
+    let title: String
     let action: () -> Void
 
     var body: some View {
@@ -1642,7 +1667,7 @@ struct ActionButton: View {
             VStack(spacing: 6) {
                 Image(systemName: item.symbol)
                     .font(.system(size: 15, weight: .semibold))
-                Text(item.title)
+                Text(title)
                     .font(.system(size: 10, weight: .semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
@@ -1680,6 +1705,20 @@ struct ActionItem: Identifiable {
     let symbol: String
     let kind: Kind
 
+    func displayTitle(for language: AppLanguage) -> String {
+        guard language == .chinese else { return title }
+        switch title {
+        case "ramdisk": return "启动 Ramdisk"
+        case "mnt2": return "挂载 mnt2"
+        case "extractFile": return "导出文件"
+        case "erase device": return "抹除设备"
+        case "restoreFile": return "恢复文件"
+        case "helloNoChange": return "helloNoChange"
+        case "reboot": return "重启"
+        default: return title
+        }
+    }
+
     var background: Color {
         switch kind {
         case .normal: return Color.white.opacity(0.55)
@@ -1703,6 +1742,35 @@ struct ActionItem: Identifiable {
         case .reboot: return Color.clear
         default: return AppColors.ink.opacity(0.07)
         }
+    }
+}
+
+struct LanguageToggle: View {
+    @Binding var language: String
+
+    var body: some View {
+        HStack(spacing: 2) {
+            languageButton(title: "EN", value: AppLanguage.english.rawValue)
+            languageButton(title: "中", value: AppLanguage.chinese.rawValue)
+        }
+        .padding(3)
+        .background(Color.white.opacity(0.56))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(AppColors.ink.opacity(0.09), lineWidth: 1))
+    }
+
+    private func languageButton(title: String, value: String) -> some View {
+        Button {
+            language = value
+        } label: {
+            Text(title)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(language == value ? .white : AppColors.secondaryText)
+                .frame(width: 27, height: 24)
+                .background(language == value ? AppColors.greenDark : Color.clear)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 

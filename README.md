@@ -2,12 +2,6 @@
 
 > **License:** This project is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Commercial use, resale, paid distribution, commercial service integration, and repackaging for profit require prior written permission from the copyright holder. See [NOTICE.md](NOTICE.md) for copyright and branding terms.
 
-> If this project helps you, donations are welcome and greatly appreciated. Your support helps keep development, testing, and maintenance going.
->
-> **TRC20:** `TNiSqoGMrXaPQUwYKkTQfzn7FhDKo22zMR`
->
-> Thank you for supporting the project.
-
 ![usbliter8 remote](docs/usbliter8-remote.png)
 
 ## 1. Build from source
